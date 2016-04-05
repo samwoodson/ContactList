@@ -25,7 +25,10 @@ class Contact
       # TODO: Return an Array of Contact instances made from the data in 'contacts.csv'.
       contacts_array = []
       CSV.foreach(FILEPATH) do |row|
-        contacts_array << row
+        name = row[0]
+        email = row[1]
+        contact = Contact.new(name, email)
+        contacts_array << contact
       end
       return contacts_array
     end
@@ -35,11 +38,13 @@ class Contact
     # @param email [String] the contact's email
     def create(name, email)
       # TODO: Instantiate a Contact, add its data to the 'contacts.csv' file, and return it.
-      contact = Contact.new(name, email)
-      CSV.open(FILEPATH, 'a') do |csv|
-        csv << [contact.name,contact.email]
+        return nil unless search(email).empty?
+        contact = Contact.new(name, email)
+        CSV.open(FILEPATH, 'a') do |csv|
+          csv << [contact.name,contact.email]
+        end
+        return File.open(FILEPATH).readlines.size
       end
-      File.open(FILEPATH).readlines.size
     end
     
     # Find the Contact in the 'contacts.csv' file with the matching id.
@@ -49,8 +54,9 @@ class Contact
       # TODO: Find the Contact in the 'contacts.csv' file with the matching id.
       csvarray = CSV.read(FILEPATH, 'r', converters: :numeric)
       csvarray[id - 1] ? csvarray[id - 1] : nil 
-
     end
+
+    # puts arr.shift for pagination
     
     # Search for contacts by either name or email.
     # @param term [String] the name fragment or email fragment to search for
@@ -63,5 +69,5 @@ class Contact
         end
       end
     end
+
   end
-end
