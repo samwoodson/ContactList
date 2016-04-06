@@ -45,9 +45,9 @@ class ContactList
       name = STDIN.gets.chomp
       puts "Enter the contact's email:"
       email = STDIN.gets.chomp
-      lines = Contact.create(name, email)
-      unless nil
-      puts "Contact created successfully, new contact ID is: #{lines}"
+      contact = Contact.create(name, email)
+      if contact
+      puts "Contact created successfully, new contact ID is: #{contact.id}"
     else
       puts "Error, the contact email already exists and cannot be created"
     end
@@ -66,9 +66,9 @@ class ContactList
       end
 
     when "search"
-      name = ARGV[1].to_s
-      arr = Contact.search(name).each_with_index do |contact, index|
-        puts "#{index + 1} #{contact[0]} (#{contact[1]})"
+      term = ARGV[1].to_s
+      arr = Contact.search(term).each_with_index do |contact, index|
+        puts "#{index + 1} #{contact.name} (#{contact.email})"
       end 
       puts "--- \n#{arr.length} records total"
 
