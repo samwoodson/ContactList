@@ -6,15 +6,15 @@ FILEPATH = 'contacts.csv'
 # The ContactList class will work with Contact objects instead of interacting with the CSV file directly
 class Contact
 
-  attr_accessor :name, :email, :id
-  
+  attr_accessor :name, :email, :id, :number
   # Creates a new contact object
   # @param name [String] The contact's name
   # @param email [String] The contact's email address
-  def initialize(name, email, id = nil)
+  def initialize(name, email, id = nil, number = nil)
     @name = name
     @email = email
     @id = id
+    @number = number
   end
 
   # Provides functionality for managing contacts in the csv file.
@@ -28,8 +28,7 @@ class Contact
       CSV.foreach(FILEPATH) do |row|
         name = row[0]
         email = row[1]
-        id = $.
-        contact = Contact.new(name, email, id)
+        contact = Contact.new(name, email)
         contacts_array << contact
       end
       return contacts_array
@@ -38,21 +37,17 @@ class Contact
     # Creates a new contact, adding it to the csv file, returning the new contact.
     # @param name [String] the new contact's name
     # @param email [String] the contact's email
-    def create(name, email, id = nil)
+    def create(name, email, id = nil, number = nil)
       # TODO: Instantiate a Contact, add its data to the 'contacts.csv' file, and return it.
         return nil unless search(email).empty?
         id = CSV.read(FILEPATH).size + 1
-        contact = Contact.new(name, email, id)
-
+        contact = Contact.new(name, email, id, number)
         CSV.open(FILEPATH, 'a') do |csv|
-          csv  << [contact.name,contact.email]
+          csv << [contact.name,contact.email,contact.number]
         end
-
-        # return File.open(FILEPATH).readlines.size
         contact
       end
   
-    
     # Find the Contact in the 'contacts.csv' file with the matching id.
     # @param id [Integer] the contact id
     # @return [Contact, nil] the contact with the specified id. If no contact has the id, returns nil.
@@ -63,7 +58,6 @@ class Contact
     end
 
     # puts arr.shift for pagination
-    
     # Search for contacts by either name or email.
     # @param term [String] the name fragment or email fragment to search for
     # @return [Array<Contact>] Array of Contact objects.
@@ -71,7 +65,6 @@ class Contact
       # TODO: Select the Contact instances from the 'contacts.csv' file whose name or email attributes contain the search term.
       Contact.all.select do |contact|
           contact.name =~ /#{term}/i || contact.email =~ /#{term}/i 
- 
       end
     end
 

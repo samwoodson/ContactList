@@ -11,7 +11,6 @@ class ContactList
     "   list   - List all contacts\n"\
     "   show   - Show a contact\n"\
     "   search - Search contacts"
-    # ARGV[0], ARGV[1] = gets.chomp.split(' ')
   end
 
   def show_list
@@ -21,29 +20,39 @@ class ContactList
       total += 1
       arr << "#{index + 1} #{contact.name} (#{contact.email})"
     end 
-      puts arr.shift(5)
-      if arr.length < 6
-        print "--- \n#{total} records total \n"
-      else 
-        input = STDIN.gets
-        while input == "\n" && arr.length > 0
-          if arr.length <=6
-            puts arr.shift(6)
-          else
-            puts arr.shift(5)
-            input = STDIN.gets
-          end
+    puts arr.shift(5)
+    if arr.length > 5
+      input = gets
+      while input == "\n" && arr.length > 0
+        puts arr.shift(5)
+        if arr.length > 0
+          input = gets
         end
-        print "--- \n#{total} records total \n"
-      end 
+      end
+    end
+    print "--- \n#{total} records total \n"
   end
 
   def new_entry
     puts "Enter the contact name:"
-    name = STDIN.gets.chomp
+    name = gets.chomp
     puts "Enter the contact's email:"
-    email = STDIN.gets.chomp
-    contact = Contact.create(name, email)
+    email = gets.chomp
+    puts "Enter phone number and label or leave blank:"
+    input = gets
+    if input == "\n"
+      contact = Contact.create(name, email)
+    else
+      number_array = []
+      number_array << input
+      loop do
+        puts "Enter another number and label or leave blank:"
+        another_number = gets
+        break if another_number == "\n"
+        number_array << another_number
+      end
+      contact = Contact.create(name, email, nil, number_array)
+    end
     if contact
       puts "Contact created successfully, new contact ID is: #{contact.id}"
     else
@@ -76,6 +85,7 @@ end
 
 selection = ARGV[0]
 option = ARGV[1]
+ARGV.clear
 
 
 case selection
