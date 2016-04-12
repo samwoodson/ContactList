@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
 require './contact'
+require 'pg'
 
-# Interfaces between a user and their contact list. Reads from and writes to standard I/O.
 class ContactList
 
-  # TODO: Implement user interaction. This should be the only file where you use `puts` and `gets`.
   def menu
     puts "Here is a list of available commands:\n"\
     "   new    - Create a new contact\n"\
     "   list   - List all contacts\n"\
     "   show   - Show a contact\n"\
     "   search - Search contacts"
+    "   update - update contact id"
   end
 
   def show_list
@@ -38,21 +38,7 @@ class ContactList
     name = gets.chomp
     puts "Enter the contact's email:"
     email = gets.chomp
-    puts "Enter phone number and label or leave blank:"
-    input = gets
-    if input == "\n"
-      contact = Contact.create(name, email)
-    else
-      number_array = []
-      number_array << input
-      loop do
-        puts "Enter another number and label or leave blank:"
-        another_number = gets
-        break if another_number == "\n"
-        number_array << another_number
-      end
-      contact = Contact.create(name, email, nil, number_array)
-    end
+    contact = Contact.create(name, email)
     if contact
       puts "Contact created successfully, new contact ID is: #{contact.id}"
     else
@@ -61,6 +47,7 @@ class ContactList
   end
 
   def show_id(id)
+
     unless id =~ /^\d+$/
       puts "Contact ID must be a number"
     else
@@ -69,7 +56,7 @@ class ContactList
       if contact == nil
         puts "Contact Not found"
       else
-        puts contact
+        puts "#{contact.name}, (#{contact.email})"
       end
     end
   end
@@ -77,15 +64,33 @@ class ContactList
   def search(term)
     arr = Contact.search(term).each_with_index do |contact, index|
       puts "#{index + 1} #{contact.name} (#{contact.email})"
-    end 
+    end
     puts "--- \n#{arr.length} records total"
   end
   
+  def update(id)
+    puts "Enter updated contact name:"
+    new_name = STDIN.gets.chomp
+    puts "Enter updated contact email:"
+    new_email = STDIN.gets.chomp
+    contact = Contact.find(id)
+    contact.name = new_name
+    contact.email = new_email
+    contact.save
+    ContactList.new.show_id(id)
+  end
+
+  def destroy(id)
+    contact = Contact.find(id)
+    contact.destroy
+  end
+
 end
 
 selection = ARGV[0]
 option = ARGV[1]
 ARGV.clear
+Contact.connection
 
 
 case selection
@@ -94,9 +99,13 @@ case selection
   when 'new'
     ContactList.new.new_entry
   when 'show'
-    ContactList.new.show_id(selection)
+    ContactList.new.show_id(option)
   when 'search'
     ContactList.new.search(option)
+  when 'update'
+    ContactList.new.update(option)
+  when 'destroy'
+    ContactList.new.destroy(option)
   else
    ContactList.new.menu
 end

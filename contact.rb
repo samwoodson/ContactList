@@ -1,15 +1,6 @@
-require 'csv'
-require 'byebug'
-
-FILEPATH = 'contacts.csv'
-# Represents a person in an address book.
-# The ContactList class will work with Contact objects instead of interacting with the CSV file directly
 class Contact
 
   attr_accessor :name, :email, :id, :number
-  # Creates a new contact object
-  # @param name [String] The contact's name
-  # @param email [String] The contact's email address
   def initialize(name, email, id = nil, number = nil)
     @name = name
     @email = email
@@ -17,56 +8,58 @@ class Contact
     @number = number
   end
 
-  # Provides functionality for managing contacts in the csv file.
-  class << self
-
-    # Opens 'contacts.csv' and creates a Contact object for each line in the file (aka each contact).
-    # @return [Array<Contact>] Array of Contact objects
-    def all
-      # TODO: Return an Array of Contact instances made from the data in 'contacts.csv'.
-      contacts_array = []
-      CSV.foreach(FILEPATH) do |row|
-        name = row[0]
-        email = row[1]
-        contact = Contact.new(name, email)
-        contacts_array << contact
-      end
-      return contacts_array
-    end
-
-    # Creates a new contact, adding it to the csv file, returning the new contact.
-    # @param name [String] the new contact's name
-    # @param email [String] the contact's email
-    def create(name, email, id = nil, number = nil)
-      # TODO: Instantiate a Contact, add its data to the 'contacts.csv' file, and return it.
-        return nil unless search(email).empty?
-        id = CSV.read(FILEPATH).size + 1
-        contact = Contact.new(name, email, id, number)
-        CSV.open(FILEPATH, 'a') do |csv|
-          csv << [contact.name,contact.email,contact.number]
-        end
-        contact
-      end
-  
-    # Find the Contact in the 'contacts.csv' file with the matching id.
-    # @param id [Integer] the contact id
-    # @return [Contact, nil] the contact with the specified id. If no contact has the id, returns nil.
-    def find(id)
-      # TODO: Find the Contact in the 'contacts.csv' file with the matching id.
-      csvarray = CSV.read(FILEPATH, 'r', converters: :numeric)
-      csvarray[id - 1] ? csvarray[id - 1] : nil 
-    end
-
-    # puts arr.shift for pagination
-    # Search for contacts by either name or email.
-    # @param term [String] the name fragment or email fragment to search for
-    # @return [Array<Contact>] Array of Contact objects.
-    def search(term)
-      # TODO: Select the Contact instances from the 'contacts.csv' file whose name or email attributes contain the search term.
-      Contact.all.select do |contact|
-          contact.name =~ /#{term}/i || contact.email =~ /#{term}/i 
-      end
-    end
-
+  #class method that opens connection to DB
+  def self.connection
+    @@conn = PG::Connection.new(
+      host: 'localhost',
+      dbname: 'contacts',
+      user: 'development',
+      password: 'development')
   end
+
+  def self.all
+    result = @@conn.exec("SELECT * from contact_list ORDER BY id;")
+    contacts_array = []
+    result.each_row do |row|
+      id = row[0]
+      name = row[1]
+      email = row[2]
+      contacts_array << Contact.new(name, email, id)
+    end
+    contacts_array
+  end
+
+  def self.create(name, email, id = nil, number = nil)
+      return nil unless search(email).empty?
+      Contact.new(name, email).save
+    end
+
+  def self.find(id)
+    contact = @@conn.exec_params("SELECT * FROM contact_list WHERE id = $1::int;", [id])
+    if contact.ntuples > 0
+      Contact.new(contact[0]['name'], contact[0]['email'], contact[0]['id'])
+    end
+  end
+
+  def self.search(term)
+    @@conn.exec_params("SELECT * FROM contact_list WHERE name ILIKE $1::varchar OR email ILIKE $1::varchar;", ['%'+term+'%']).inject([]) do |matches,contact|
+      contact = Contact.new(contact['name'], contact['email'])
+      matches << contact
+    end
+  end
+
+  def save
+    if id
+      @@conn.exec_params("UPDATE contact_list SET name = $1, email = $2 WHERE id = $3::int;", [name, email, id])
+    else
+      contact = @@conn.exec_params("INSERT INTO contact_list (name, email) VALUES ($1, $2) RETURNING id;", [name, email])
+      self.id = contact[0]['id']
+    end
+    self
+  end
+
+  def destroy
+    @@conn.exec_params("DELETE FROM contact_list WHERE id = $1::int", [id])
+  end
+
 end
