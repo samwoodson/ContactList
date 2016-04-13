@@ -1,29 +1,15 @@
 #!/usr/bin/env ruby
-require './contact'
-require './phone'
-require 'pg'
-require './connection'
-
-class ContactList
-
-  def menu
-    puts "Here is a list of available commands:\n"\
-    "   new      - Create a new contact\n"\
-    "   list     - List all contacts\n"\
-    "   show     - Show a contact\n"\
-    "   search   - Search contacts\n"\
-    "   update   - update contact id\n"\
-    "   newphone - enter new phone numbers\n"\
-    "  allphones - show all phone numbers"
-    "searchphones- find phone belonging to contact id"
-  end
+require './setup'
+require_relative 'contact'
+class ContactList 
 
   def show_list
     total = 0
     arr = []
-    Contact.all.each_with_index do |contact, index|
+    list_of_all = Contact.all
+    list_of_all.each do |contact|
       total += 1
-      arr << "#{index + 1} #{contact.name} (#{contact.email})"
+      arr << "#{contact.id} #{contact.name} (#{contact.email})"
     end 
     puts arr.shift(5)
     if arr.length > 5
@@ -43,7 +29,7 @@ class ContactList
     name = gets.chomp
     puts "Enter the contact's email:"
     email = gets.chomp
-    contact = Contact.create(name, email)
+    contact = Contact.create(name: name, email: email)
     if contact
       puts "Contact created successfully, new contact ID is: #{contact.id}"
     else
@@ -67,8 +53,8 @@ class ContactList
   end
 
   def search(term)
-    arr = Contact.search(term).each_with_index do |contact, index|
-      puts "#{index + 1} #{contact.name} (#{contact.email})"
+    arr = Contact.where("email ILIKE ? OR name ILIKE ?", '%'+term+'%', '%'+term+'%').each do |contact|
+      puts "#{contact.id} #{contact.name} (#{contact.email})"
     end
     puts "--- \n#{arr.length} records total"
   end
@@ -129,14 +115,24 @@ class ContactList
     end
     puts "--- \n#{phones.length} records total"
   end
-
+  
+  def menu
+    puts "Here is a list of available commands:\n"\
+    "   new      - Create a new contact\n"\
+    "   list     - List all contacts\n"\
+    "   show     - Show a contact\n"\
+    "   search   - Search contacts\n"\
+    "   update   - update contact id\n"\
+    "   newphone - enter new phone numbers\n"\
+    "  allphones - show all phone numbers"
+    "searchphones- find phone belonging to contact id"
+  end
 
 end
 
 selection = ARGV[0]
 option = ARGV[1]
 ARGV.clear
-Connection.conn
 
 case selection
   when 'list'
