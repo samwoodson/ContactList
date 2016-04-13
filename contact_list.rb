@@ -1,16 +1,21 @@
 #!/usr/bin/env ruby
 require './contact'
+require './phone'
 require 'pg'
+require './connection'
 
 class ContactList
 
   def menu
     puts "Here is a list of available commands:\n"\
-    "   new    - Create a new contact\n"\
-    "   list   - List all contacts\n"\
-    "   show   - Show a contact\n"\
-    "   search - Search contacts"
-    "   update - update contact id"
+    "   new      - Create a new contact\n"\
+    "   list     - List all contacts\n"\
+    "   show     - Show a contact\n"\
+    "   search   - Search contacts\n"\
+    "   update   - update contact id\n"\
+    "   newphone - enter new phone numbers\n"\
+    "  allphones - show all phone numbers"
+    "searchphones- find phone belonging to contact id"
   end
 
   def show_list
@@ -85,13 +90,53 @@ class ContactList
     contact.destroy
   end
 
+  def new_phone
+    puts 'Enter contact id to add phone to:'
+    contact_id = gets.chomp
+    puts 'Enter label for phone number:'
+    label = gets.chomp
+    puts 'Enter 10 digit number, no spaces or dashes:'
+    number = gets.chomp
+    phone = Phone.new(contact_id, label, number)
+    phone.save
+  end
+
+  def show_phones
+    total = 0
+    arr = []
+    Phone.all.each_with_index do |phone, index|
+      total += 1
+      arr << "#{phone.contact_id} #{phone.label} (#{phone.number})"
+    end 
+    puts arr.shift(5)
+    if arr.length > 5
+      input = gets
+      while input == "\n" && arr.length > 0
+        puts arr.shift(5)
+        if arr.length > 0
+          input = gets
+        end
+      end
+    end
+    print "--- \n#{total} records total \n"
+  end
+
+  def search_phone
+    puts "Enter contact id to find all phones belonging to them:"
+    id = gets.chomp
+    phones = Phone.search(id).each do |contact|
+      puts "#{phone.label} (#{phone.number})"
+    end
+    puts "--- \n#{phones.length} records total"
+  end
+
+
 end
 
 selection = ARGV[0]
 option = ARGV[1]
 ARGV.clear
-Contact.connection
-
+Connection.conn
 
 case selection
   when 'list'
@@ -106,6 +151,12 @@ case selection
     ContactList.new.update(option)
   when 'destroy'
     ContactList.new.destroy(option)
+  when 'newphone'
+    ContactList.new.new_phone
+  when 'allphones'
+    ContactList.new.show_phones
+  when 'searchphone'
+    ContactList.new.search_phone
   else
    ContactList.new.menu
 end
